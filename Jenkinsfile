@@ -7,12 +7,10 @@ pipeline {
 
     environment {
         MONGO_URI = "mongodb+srv://supercluster.d83jj.mongodb.net/superData"
-        MONGO_DB_CREDS = credentials('mongo-db-credentials')
+        MONGO_DB_CREDS = credentials('mongo-db-credentials') // This stores username & password together
         MONGO_USERNAME = credentials('mongo-db-username')
         MONGO_PASSWORD = credentials('mongo-db-password')
     }
-
-
 
     stages {
         stage('Installing Dependencies') {
@@ -36,11 +34,12 @@ pipeline {
                 stage('OWASP Dependency Check') {
                     steps {
                         dependencyCheck additionalArguments: '''
-                            --scan \'./\' 
-                            --out \'./\'  
-                            --format \'ALL\' 
-                            --disableYarnAudit \
-                            --prettyPrint''', odcInstallation: 'OWASP-DepCheck-10'
+                            --scan ./ 
+                            --out ./  
+                            --format ALL 
+                            --disableYarnAudit 
+                            --prettyPrint
+                        ''', odcInstallation: 'OWASP-DepCheck-10'
 
                         dependencyCheckPublisher failedTotalCritical: 1, pattern: 'dependency-check-report.xml', stopBuild: false
                     }
@@ -51,14 +50,15 @@ pipeline {
         stage('Unit Testing') {
             options { retry(2) }
             steps {
+                // Correct reference to Jenkins credentials
                 sh 'echo Colon-Separated - $MONGO_DB_CREDS'
-                sh 'echo Username - $MONGO_DB_CREDS_USR'
-                sh 'echo Password - $MONGO_DB_CREDS_PSW'
-                sh 'npm test' 
-            }
+                sh 'echo Username - ${MONGO_USERNAME}'
+                sh 'echo Password - ${MONGO_PASSWORD}'
 
+                sh 'npm test'
+            }
             junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
-        }    
+        }
 
         stage('Code Coverage') {
             steps {
@@ -67,24 +67,30 @@ pipeline {
                 }
             }
         }
-
-    }   
-
+    }
 
     post {
         always {
-
+            // Publish test and dependency scan reports
             junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
             junit allowEmptyResults: true, stdioRetention: '', testResults: 'dependency-check-junit.xml' 
 
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: './', reportFiles: 'zap_report.html', reportName: 'DAST - OWASP ZAP Report', reportTitles: '', useWrapperFileDirectly: true])
+            // Publish OWASP ZAP Report
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, 
+                reportDir: './', reportFiles: 'zap_report.html', 
+                reportName: 'DAST - OWASP ZAP Report', useWrapperFileDirectly: true])
 
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: './', reportFiles: 'dependency-check-jenkins.html', reportName: 'Dependency Check HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+            // Publish Dependency Check Report
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, 
+                reportDir: './', reportFiles: 'dependency-check-jenkins.html', 
+                reportName: 'Dependency Check HTML Report', useWrapperFileDirectly: true])
 
-            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Code Coverage HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+            // Publish Code Coverage Report
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, 
+                reportDir: 'coverage/lcov-report', reportFiles: 'index.html', 
+                reportName: 'Code Coverage HTML Report', useWrapperFileDirectly: true])
         }
-    } 
-    
+    }
 }
 
 
