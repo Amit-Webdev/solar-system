@@ -69,18 +69,24 @@ pipeline {
         }
 
 
+
         stage('SAST - SonarQube') {
             steps {
                 // sh 'sleep 5s'
+                    withSonarQubeEnv('sonar-qube-server') {
                         sh 'echo $SONAR_SCANNER_HOME'
                         sh '''
                             $SONAR_SCANNER_HOME/bin/sonar-scanner \
                                 -Dsonar.projectKey=amit-webdev \
                                 -Dsonar.sources=app.js \
                                 -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
+                                -Dsonar.login=5168fadd7e3039673d299b8bce8a9c6577b45e96 \
+                                -Dsonar.host.url=https://sonarcloud.io
                         '''
+                    }
+                
             }
-        } 
+        }
     }
 
     post {
