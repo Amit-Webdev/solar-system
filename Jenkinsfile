@@ -56,6 +56,8 @@ pipeline {
                 sh 'echo Password - $MONGO_DB_CREDS_PSW'
                 sh 'npm test' 
             }
+
+            junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
         }    
 
         stage('Code Coverage') {
@@ -66,7 +68,22 @@ pipeline {
             }
         }
 
-    }    
+    }   
+
+
+    post {
+        always {
+
+            junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
+            junit allowEmptyResults: true, stdioRetention: '', testResults: 'dependency-check-junit.xml' 
+
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: './', reportFiles: 'zap_report.html', reportName: 'DAST - OWASP ZAP Report', reportTitles: '', useWrapperFileDirectly: true])
+
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: './', reportFiles: 'dependency-check-jenkins.html', reportName: 'Dependency Check HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+
+            publishHTML([allowMissing: true, alwaysLinkToLastBuild: true, keepAll: true, reportDir: 'coverage/lcov-report', reportFiles: 'index.html', reportName: 'Code Coverage HTML Report', reportTitles: '', useWrapperFileDirectly: true])
+        }
+    } 
     
 }
 
