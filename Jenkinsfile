@@ -57,7 +57,6 @@ pipeline {
 
                 sh 'npm test'
             }
-            junit allowEmptyResults: true, stdioRetention: '', testResults: 'test-results.xml'
         }
 
         stage('Code Coverage') {
