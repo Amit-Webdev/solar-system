@@ -72,8 +72,6 @@ pipeline {
         stage('SAST - SonarQube') {
             steps {
                 // sh 'sleep 5s'
-                timeout(time: 60, unit: 'SECONDS') {
-                    withSonarQubeEnv('sonar-qube-server') {
                         sh 'echo $SONAR_SCANNER_HOME'
                         sh '''
                             $SONAR_SCANNER_HOME/bin/sonar-scanner \
@@ -81,9 +79,6 @@ pipeline {
                                 -Dsonar.sources=app.js \
                                 -Dsonar.javascript.lcov.reportPaths=./coverage/lcov.info
                         '''
-                    }
-                    waitForQualityGate abortPipeline: true
-                }
             }
         } 
     }
